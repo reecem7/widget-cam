@@ -62,7 +62,8 @@ cprequire_test(["inline:com-chilipeppr-widget-cam"], function(myWidget) {
     $('body').append('<div id="testDivForSpjsWidget"></div>');
     chilipeppr.load(
         "#testDivForSpjsWidget",
-        "http://fiddle.jshell.net/chilipeppr/vetj5fvx/show/light/",
+        //"http://fiddle.jshell.net/chilipeppr/vetj5fvx/show/light/",
+        "http://raw.githubusercontent.com/chilipeppr/widget-spjs/master/auto-generated-widget.html",
         function() {
             console.log("mycallback got called after loading spjs module");
             cprequire(["inline:com-chilipeppr-widget-serialport"], function(spjs) {
