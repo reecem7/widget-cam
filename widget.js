@@ -153,6 +153,9 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
             
             this.setupPubSubForSpjsConnect();
             //this.subscribeToLowLevelSerial();
+            
+            // setup the install div buttons
+            this.uv4lSetupInstall();
 
             console.log("I am done being initted.");
         },
@@ -231,8 +234,20 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                                     if (status.isRaspberryPi) {
                                 
                                         // awesome. we are raspi. we can install
-                                        $('#' + that.id + " .eligible").removeClass("hidden");
                                         that.isRunningInitCheckForCam = false;
+                                        
+                                        that.uv4lCheckIfInstalled(function(data) {
+                                            console.log("got check complete for uv4l. data:", data);
+                                            if (data.isInstalled) {
+                                                $('#' + that.id + " .isinstalled").removeClass("hidden");
+                                                
+                                                // let's see if it is running
+                                                
+                                            } else {
+                                                // not installed but eligible
+                                                $('#' + that.id + " .eligible").removeClass("hidden");
+                                            }
+                                        });
                                         
                                     } else {
                                         console.log("at least is linux. show error");
@@ -280,23 +295,59 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
             this.initCheckForCam();
         },
         /**
-         * Attach all events to the install div to enable everything to work.
+         * Send the execruntime command to the currently running SPJS to see what
+         * OS is running.
          */
-        setupInstall: function() {
-            $('#' + this.id + " . btn-install").click(this.installCamServer.bind(this));
-        },
-        /**
-         * Install Cam Server
-         */
-        installCamServer: function() {
-            // We need to send lots of commands to install the server
-            
-        },
         sendExecRuntime: function() {
             chilipeppr.publish("/com-chilipeppr-widget-serialport/ws/send", "execruntime");  
         },
+        /**
+         * Send a terminal command to the currently running SPJS.
+         */
         send: function(cmd) {
             chilipeppr.publish("/com-chilipeppr-widget-serialport/ws/send", "exec " + cmd);  
+        },
+        sendSyncCallback: null,
+        sendSyncIdNum: 0,
+        /**
+         * Send synchronously with callback as if you were right at the command line
+         */
+        sendSync: function(cmd, callback) {
+            if (this.isAreWeSubscribedToLowLevel) {
+                console.warn("sendSync is being called while we are already subscribed to low-level, so that is wrong. this can only be called when not subscribed.");
+                return;
+            }
+            
+            this.sendSyncCallback = callback;
+            chilipeppr.subscribe("/com-chilipeppr-widget-serialport/ws/recv", this, this.onSendSyncWsRecv);
+            
+            this.sendSyncActiveId = "cam-install-" + this.sendSyncIdNum;
+            this.sendSyncIdNum++;
+            chilipeppr.publish("/com-chilipeppr-widget-serialport/ws/send", "exec id:" + this.sendSyncActiveId + " " + cmd);  
+
+        },
+        onSendSyncWsRecv: function(msg) {
+            
+            if (msg.match(/^\{/)) {
+                // it's json
+                var data = $.parseJSON(msg);
+                //console.log("got json for onSendSyncWsRecv. data:", data);
+                if ('ExecStatus' in data) {
+                    // this is what we were waiting for
+                    //console.log("onSendSyncWsRecv we have ExecStatus so good. is it our id?", this.sendSyncActiveId);
+                    
+                    // see if it's the id we want
+                    if (data.Id == this.sendSyncActiveId) {
+                        // it is the cmd we expect, awesome
+                        chilipeppr.unsubscribe("/com-chilipeppr-widget-serialport/ws/recv", this.onSendSyncWsRecv);
+                        //console.log("it was our id. we are doing the sendSync callback now with data:", data);
+                        this.sendSyncCallback(data);
+                        this.sendSyncCallback = null;
+                        this.sendSyncActiveId = null;
+                        
+                    }
+                }
+            }
         },
         isAreWeSubscribedToLowLevel: false,
         subscribeToLowLevelSerial: function() {
@@ -323,7 +374,7 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                     //this.appendLog(data.Output + "\n");      
                     if (this.isInRaspiCheckMode) {
                         this.checkIfRaspberryPiCallback(data);
-                    }
+                    } 
                 } else if ('ExecRuntimeStatus' in data) {
                     this.onExecRuntimeStatus(data);
                 }
@@ -432,13 +483,38 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
             this.statusCallback(payload);
         },
         /**
+         * Attach all events to the install div to enable everything to work.
+         */
+        uv4lSetupInstall: function() {
+            $('#' + this.id + " .btn-install").click(this.uv4lInstall.bind(this));
+        },
+        /**
+         * Check if uv4l is installed
+         */
+        uv4lCheckIfInstalled: function(callback) {
+            // if you have verified if this is linux/raspi this will check
+            // if installed
+            this.sendSync("uv4l -i", function(data) {
+                // when we get here, we have our response from uv4l
+                console.log("got check for uv4l back. data:", data);
+                if (data.Output.match(/Userspace Video4Linux/i)) {
+                    // uv4l is installed
+                    callback({isInstalled: true});
+                } else {
+                    // uv4l not installed
+                    callback({isInstalled: false});
+                }
+            });
+        },
+        /**
          * We actually do the install here
          */
-        installUv4lOnRaspi: function() {
+        uv4lInstall: function() {
             var cmds = [
                 ''
             ]
         },
+
         
         // ---------------
         // End Cam check/install region
