@@ -197,7 +197,7 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
         initCheckForCam: function() {
             
             // check settings and see if there is a stored ip addr to connect to
-            console.log("initting check for cam");
+            console.log("initCheckForCam. initting check for cam");
             
             if (this.isRunningInitCheckForCam) {
                 console.warn("we are currently running initCheckForCam. Exiting.");
@@ -223,52 +223,69 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                     // check if we are on linux
                     that.checkIfLinux(function(status) {
                         
-                        console.log("got callback from checking if linux. status:", status);
+                        console.log("initCheckForCam. got callback from checking if linux. status:", status);
                         
                         if (status.OS.match(/linux/i)) {
                             
                             if (status.Arch.match(/arm/i)) {
                                 
-                                that.checkIfRaspberryPi(function(status) {
-                                    
-                                    // when we get here, we get back a status to determine
-                                    // if we're on a raspi or not
-                                    console.log("we got back from checkIfRaspberryPi. status:", status);
-                                    
-                                    if (status.isRaspberryPi) {
-                                
-                                        // awesome. we are raspi. we can install
-                                        that.isRunningInitCheckForCam = false;
+                                // check if allowexec
+                                that.checkIfAllowExec(function(status) {
+                                    if (status.isAllowExec) {
                                         
-                                        that.uv4lCheckIfInstalled(function(data) {
-                                            console.log("got check complete for uv4l. data:", data);
-                                            if (data.isInstalled) {
-                                                $('#' + that.id + " .isinstalled").removeClass("hidden");
+                                        that.checkIfRaspberryPi(function(status) {
+                                            
+                                            // when we get here, we get back a status to determine
+                                            // if we're on a raspi or not
+                                            console.log("initCheckForCam. we got back from checkIfRaspberryPi. status:", status);
+                                            
+                                            if (status.isRaspberryPi) {
+                                        
+                                                // awesome. we are raspi. 
+                                                // we can install
+                                                that.isRunningInitCheckForCam = false;
                                                 
-                                                // let's see if it is running
-                                                
+                                                that.uv4lCheckIfInstalled(function(data) {
+                                                    console.log("initCheckForCam. got check complete for uv4l. data:", data);
+                                                    if (data.isInstalled) {
+                                                        $('#' + that.id + " .isinstalled").removeClass("hidden");
+                                                        
+                                                        // let's see if it is running
+                                                        
+                                                    } else {
+                                                        // not installed but eligible
+                                                        $('#' + that.id + " .eligible").removeClass("hidden");
+                                                        that.isRunningInitCheckForCam = false;
+                                                        
+                                                    }
+                                                });
+                                                        
                                             } else {
-                                                // not installed but eligible
-                                                $('#' + that.id + " .eligible").removeClass("hidden");
-                                            }
+                                                console.log("initCheckForCam. at least is linux. show error");
+                                                $('#' + that.id + " .linux").removeClass("hidden");
+                                                that.isRunningInitCheckForCam = false;
+                                            }  
+                                               
                                         });
                                         
                                     } else {
-                                        console.log("at least is linux. show error");
-                                        $('#' + that.id + " .linux").removeClass("hidden");
+                                        // not allowed, ask to restart spjs
+                                        // with cmd line switch
+                                        $('#' + that.id + " .allowexec").removeClass("hidden");
                                         that.isRunningInitCheckForCam = false;
-                                    }
-                                
+                                        
+                                    } 
+                                    
                                 });
-                                
+                                  
                             } else {
-                                console.log("at least is linux. show error");
+                                console.log("initCheckForCam. at least is linux. show error");
                                 $('#' + that.id + " .linux").removeClass("hidden");
                                 that.isRunningInitCheckForCam = false;
                             }
                             
                         } else {
-                            console.log("We are not Linux, so giving up. Show error"); 
+                            console.log("initCheckForCam. We are not Linux, so giving up. Show error"); 
                             var os = status.OS.charAt(0).toUpperCase() + status.OS.slice(1);
                             $('#' + that.id + " .bados .os").text(os);
                             $('#' + that.id + " .bados").removeClass("hidden");
@@ -291,7 +308,15 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
            chilipeppr.subscribe('/com-chilipeppr-widget-serialport/ws/onconnect', this, this.onSpjsConnect); 
            chilipeppr.subscribe('/com-chilipeppr-widget-serialport/ws/ondisconnect', this, this.onSpjsDisconnect); 
         },
-        onSpjsConnect: function() {
+        ipAddrForSpjs: null,
+        onSpjsConnect: function(payload, more) {
+            console.log("onSpjsConnect. payload:", payload, "more:", more);
+            // "ws://192.168.1.34:8989/ws"
+            var websocket = more.websocket;
+            if (websocket && websocket.url && websocket.url.match(/wss{0,1}:\/\/(.*):/)) {
+                this.ipAddrForSpjs = RegExp.$1;
+                console.log("onSpjsConnect. got ip of websocket conn. ip:", this.ipAddrForSpjs);
+            }
             // check for cam 1 sec later
             setTimeout(this.initCheckForCam.bind(this), 1000);
         },
@@ -311,26 +336,32 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
         send: function(cmd) {
             chilipeppr.publish("/com-chilipeppr-widget-serialport/ws/send", "exec " + cmd);  
         },
+        isInSendSyncMode: false,
         sendSyncCallback: null,
         sendSyncIdNum: 0,
         /**
          * Send synchronously with callback as if you were right at the command line
          */
         sendSync: function(cmd, callback) {
-            if (this.isAreWeSubscribedToLowLevel) {
-                console.warn("sendSync is being called while we are already subscribed to low-level, so that is wrong. this can only be called when not subscribed.");
+            
+            if (this.isInSendSyncMode) {
+                console.error("Cannot sendSync twice while waiting for response from prev request.");
                 return;
             }
             
+            // this method makes sure we are subscribed only once
+            this.subscribeToLowLevelSerial();
+            
+            this.isInSendSyncMode = true;
             this.sendSyncCallback = callback;
-            chilipeppr.subscribe("/com-chilipeppr-widget-serialport/ws/recv", this, this.onSendSyncWsRecv);
             
             this.sendSyncActiveId = "cam-install-" + this.sendSyncIdNum;
             this.sendSyncIdNum++;
             chilipeppr.publish("/com-chilipeppr-widget-serialport/ws/send", "exec id:" + this.sendSyncActiveId + " " + cmd);  
-
+            console.log("just did sendSync. sendSyncActiveId:", this.sendSyncActiveId);
         },
         onSendSyncWsRecv: function(msg) {
+            console.log("onSendSyncWsRecv. msg:", msg, "sendSyncActiveId:", this.sendSyncActiveId);
             
             if (msg.match(/^\{/)) {
                 // it's json
@@ -340,15 +371,27 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                     // this is what we were waiting for
                     //console.log("onSendSyncWsRecv we have ExecStatus so good. is it our id?", this.sendSyncActiveId);
                     
-                    // see if it's the id we want
-                    if (data.Id == this.sendSyncActiveId) {
-                        // it is the cmd we expect, awesome
-                        chilipeppr.unsubscribe("/com-chilipeppr-widget-serialport/ws/recv", this.onSendSyncWsRecv);
-                        //console.log("it was our id. we are doing the sendSync callback now with data:", data);
-                        this.sendSyncCallback(data);
-                        this.sendSyncCallback = null;
-                        this.sendSyncActiveId = null;
-                        
+                    if (data.ExecStatus == "Progress") {
+                        // just stick in the terminal window
+                        this.appendToOutput(data.Output);
+                    } else {
+                    
+                        // we get an ExecStatus of Done or Error here
+                        // see if it's the id we want
+                        if (data.Id == this.sendSyncActiveId) {
+                            console.log("response was for sendSyncActiveId:", this.sendSyncActiveId);
+                            
+                            // it is the cmd we expect, awesome
+                            //chilipeppr.unsubscribe("/com-chilipeppr-widget-serialport/ws/recv", this.onSendSyncWsRecv);
+                            this.unsubscribeFromLowLevelSerial();
+                            this.isInSendSyncMode = false;
+                            
+                            //console.log("it was our id. we are doing the sendSync callback now with data:", data);
+                            this.sendSyncActiveId = null;
+                            this.sendSyncCallback(data);
+                            //this.sendSyncCallback = null;
+                            
+                        }
                     }
                 }
             }
@@ -378,7 +421,9 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                     //this.appendLog(data.Output + "\n");      
                     if (this.isInRaspiCheckMode) {
                         this.checkIfRaspberryPiCallback(data);
-                    } 
+                    } else if (this.isInSendSyncMode) {
+                        this.onSendSyncWsRecv(msg);
+                    }
                 } else if ('ExecRuntimeStatus' in data) {
                     this.onExecRuntimeStatus(data);
                 }
@@ -394,7 +439,10 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
             this.subscribeToLowLevelSerial();
             // we potentially have a raspi candidate. send actual cmd line and parse that
             this.send('cat /etc/os-release');
-            this.send('echo "done-with-cat-etc-release"');
+            var that = this;
+            setTimeout(function() {
+                that.send('echo "done-with-cat-etc-release"');
+            }, 500);
         },
         checkIfRaspberryPiCallback: function(payload) {
             
@@ -510,15 +558,95 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                 }
             });
         },
+        
+        /**
+         * Check if -allowexec is in play
+         */
+        checkIfAllowExec: function(callback) {
+            console.log("checking if allowexec is in play")
+            // we see if we can exec a command. just send any command.
+            this.sendSync('echo "chilipeppr"', function(data) {
+                // when we get here, we have our response from uv4l
+                console.log("got check for exec allow back. data:", data);
+                if (data.Output.match(/chilipeppr/i)) {
+                    // allowexec good
+                    callback({isAllowExec: true});
+                } else {
+                    // not allowed
+                    callback({isAllowExec: false});
+                }
+            });
+        },
+        
         /**
          * We actually do the install here
          */
         uv4lInstall: function() {
-            var cmds = [
-                ''
-            ]
-        },
+            
+            // let's show commands and results in terminal pre div
+            var termEl = $('#' + this.id + ' .terminal');
+            termEl.text("");
+            
+            // first step is
+            // curl http://www.linux-projects.org/listing/uv4l_repo/lrkey.asc | sudo apt-key add -
+            var cmd = "bash -c \"curl http://www.linux-projects.org/listing/uv4l_repo/lrkey.asc | sudo apt-key add -\"";
+            this.appendToOutput("> " + cmd);
+            
+            this.sendSync(cmd, function(data) {
+                // this.appendToOutput(data.Output);
+                
+                if (data.ExecStatus == "Error") {
+                    this.appendToOutput("Ran into error. Please try install again.");
+                    return;
+                }
+                
+                // next step add deb to /etc/apt/sources.list
+                cmd = "sudo sed -i '$ a deb http://www.linux-projects.org/listing/uv4l_repo/raspbian/ wheezy main' /etc/apt/sources.list";
+                this.appendToOutput("> " + cmd);
+                this.sendSync(cmd, function(data) {
+                    // this.appendToOutput(data.Output);
 
+                    if (data.ExecStatus == "Error") {
+                        this.appendToOutput("Ran into error. Please try install again.");
+                        return;
+                    }
+                    
+                    // next
+                    cmd = "sudo apt-get -y update; sudo apt-get -y install uv4l uv4l-raspicam uv4l-raspicam-extras uv4l-webrtc uv4l-server uv4l-uvc uv4l-mjpegstream";
+                    this.appendToOutput("> " + cmd);
+                    this.sendSync(cmd, function(data) {
+                        // this.appendToOutput(data.Output);
+                        
+                        if (data.ExecStatus == "Error") {
+                            this.appendToOutput("Ran into error. Please try install again.");
+                            return;
+                        }
+
+                        // next
+                        cmd = "sudo service uv4l_raspicam restart; sudo service uv4l_raspicam status";
+                        this.appendToOutput("> " + cmd);
+                        this.sendSync(cmd, function(data) {
+                            // this.appendToOutput(data.Output);
+
+                            if (data.ExecStatus == "Error") {
+                                this.appendToOutput("Ran into error. Please try install again.");
+                                return;
+                            }
+                            
+                            // we are ready to show a preview of the video stream
+                            this.appendToOutput("Ready to show video stream.");
+                            
+                        });
+                    });
+                });
+            });
+        },
+        appendToOutput: function(txt) {
+            var termEl = $('#' + this.id + ' .terminal');
+            termEl.text(termEl.text() + txt + "\n");
+            
+            termEl.scrollTop(termEl[0].scrollHeight - termEl.height());
+        },
         
         // ---------------
         // End Cam check/install region
@@ -1045,7 +1173,7 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
             $('#' + this.id + ' .panel-footer').removeClass('hidden');
             $('#' + this.id + ' .hidebody span').addClass('glyphicon-chevron-up');
             $('#' + this.id + ' .hidebody span').removeClass('glyphicon-chevron-down');
-            $('#' + this.id + ' .overlayWrapper').removeClass('hidden');
+            // $('#' + this.id + ' .overlayWrapper').removeClass('hidden');
             if (!(evt == null)) {
                 this.options.showBody = true;
                 this.saveOptionsLocalStorage();
@@ -1064,7 +1192,7 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
             $('#' + this.id + ' .panel-footer').addClass('hidden');
             $('#' + this.id + ' .hidebody span').removeClass('glyphicon-chevron-up');
             $('#' + this.id + ' .hidebody span').addClass('glyphicon-chevron-down');
-            $('#' + this.id + ' .overlayWrapper').addClass('hidden');
+            // $('#' + this.id + ' .overlayWrapper').addClass('hidden');
             if (!(evt == null)) {
                 this.options.showBody = false;
                 this.saveOptionsLocalStorage();
