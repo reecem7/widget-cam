@@ -248,9 +248,17 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                                                 that.uv4lCheckIfInstalled(function(data) {
                                                     console.log("initCheckForCam. got check complete for uv4l. data:", data);
                                                     if (data.isInstalled) {
-                                                        $('#' + that.id + " .isinstalled").removeClass("hidden");
+                                                        
                                                         
                                                         // let's see if it is running
+                                                        that.checkIfUv4lIsRunning(function(results) {
+                                                            if (results.isRunning) {
+                                                                $('#' + that.id + " .isrunning").removeClass("hidden");
+                                                            } else {
+                                                                // it is not running, let's launch it for them
+                                                                $('#' + that.id + " .isinstalled").removeClass("hidden");
+                                                            }
+                                                        })
                                                         
                                                     } else {
                                                         // not installed but eligible
@@ -300,6 +308,225 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                 }
             });
         },
+        
+        // WEBRTC CONNECTION METHODS
+        
+        /**
+         * Trigger the initial check of whether WebRTC is running on the server.
+         */
+        checkIfWebRtcIsRunningOnServer: function() {
+            this.webRtcSignallingServerAddress = this.ipAddrForSpjs + ':8080';
+            this.webRtcWs = null;
+            this.webRtcPc;
+            this.webRtcAudioVideoStream;
+            this.pcConfig = {"iceServers": [
+                    {"urls": ["stun:stun.l.google.com:19302", "stun:" + this.ipAddrForSpjs + ":3478"]}
+                ]};
+            this.pcOptions = {
+                optional: [
+                    {DtlsSrtpKeyAgreement: true}
+                ]
+            };
+            this.mediaConstraints = {
+                optional: [],
+                mandatory: {
+                    OfferToReceiveAudio: true,
+                    OfferToReceiveVideo: true
+                }
+            };
+
+            this.RTCPeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+            this.RTCSessionDescription = window.mozRTCSessionDescription || window.RTCSessionDescription;
+            this.RTCIceCandidate = window.mozRTCIceCandidate || window.RTCIceCandidate;
+            navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
+            this.URL =  window.URL || window.webkitURL;
+
+        },
+        webRtcCeatePeerConnection: function() {
+            try {
+                var pcConfig = this.pcConfig;
+                
+                console.log(JSON.stringify(pcConfig));
+                this.pc = new this.RTCPeerConnection(pcConfig, this.pcOptions);
+                this.pc.onicecandidate = this.onWebRtcIceCandidate;
+                this.pc.onaddstream = this.onWebRtcRemoteStreamAdded;
+                this.pc.onremovestream = this.onWebRtcRemoteStreamRemoved;
+                console.log("peer connection successfully created!");
+            } catch (e) {
+                console.log("createPeerConnection() failed");
+            }
+        },
+        onWebRtcIceCandidate: function(event) {
+            if (event.candidate) {
+                var candidate = {
+                    sdpMLineIndex: event.candidate.sdpMLineIndex,
+                    sdpMid: event.candidate.sdpMid,
+                    candidate: event.candidate.candidate
+                };
+                var command = {
+                    command_id: "addicecandidate",
+                    data: JSON.stringify(candidate)
+                };
+                this.webRtcWs.send(JSON.stringify(command));
+            } else {
+                console.log("End of candidates.");
+            }
+        },
+        onWebRtcRemoteStreamAdded: function(event) {
+            console.log("Remote stream added:", this.URL.createObjectURL(event.stream));
+            var remoteVideoElement = document.getElementById('com-chilipeppr-widget-cam-remote-video');
+            remoteVideoElement.src = this.URL.createObjectURL(event.stream);
+            remoteVideoElement.play();
+        },
+        onWebRtcRemoteStreamRemoved: function(event) {
+            var remoteVideoElement = document.getElementById('com-chilipeppr-widget-cam-remote-video');
+            remoteVideoElement.src = '';
+        },
+        webRtcOffer: function(stream) {
+            this.webRtcCeatePeerConnection();
+            if (stream) {
+                this.pc.addStream(stream);
+            }
+            var command = {
+                command_id: "offer",
+                options: {
+                    force_hw_vcodec: $('#' + this.id + ' .remote_hw_vcodec').is(':checked'), //document.getElementById("remote_hw_vcodec").checked,
+                    vformat: $('#' + this.id + ' .remote_hw_vcodec').val() //document.getElementById("remote_vformat").value
+                }
+            };
+            this.webRtcWs.send(JSON.stringify(command));
+            console.log("offer(), command=" + JSON.stringify(command));
+        },
+        webRtcStart: function() {
+            var that = this;
+            if ("WebSocket" in window) {
+                // document.getElementById("stop").disabled = false;
+                // document.getElementById("start").disabled = true;
+                // document.documentElement.style.cursor ='wait';
+                //server = document.getElementById("signalling_server").value.toLowerCase();
+                var server = this.webRtcSignallingServerAddress;
+                
+                var protocol = "ws:"; //location.protocol === "https:" ? "wss:" : "ws:";
+                this.webRtcWs = new WebSocket(protocol + '//' + server + '/stream/webrtc');
+
+                this.webRtcWs.onopen = function () {
+                    console.log("onopen()");
+
+                    that.audio_video_stream = null;
+                    
+                    that.webRtcOffer();
+                    
+                };
+
+                this.webRtcWs.onmessage = function (evt) {
+                    var msg = JSON.parse(evt.data);
+                    //console.log("message=" + msg);
+                    console.log("type=" + msg.type);
+
+                    switch (msg.type) {
+                        case "offer":
+                            that.webRtcPc.setRemoteDescription(new that.RTCSessionDescription(msg),
+                                function onRemoteSdpSuccess() {
+                                    console.log('onRemoteSdpSucces()');
+                                    that.webRtcPc.createAnswer(function(sessionDescription) {
+                                        that.webRtcPc.setLocalDescription(sessionDescription);
+                                        var command = {
+                                            command_id: "answer",
+                                            data: JSON.stringify(sessionDescription)
+                                        };
+                                        that.webRtcWs.send(JSON.stringify(command));
+                                        console.log(command);
+
+                                    }, function (error) {
+                                        alert("Failed to createAnswer: " + error);
+
+                                    }, mediaConstraints);
+                                },
+                                function onRemoteSdpError(event) {
+                                    alert('Failed to set remote description (unsupported codec on this browser?): ' + event);
+                                    that.webRtcStop();
+                                }
+                            );
+
+                            var command = {
+                                command_id: "geticecandidate"
+                            };
+                            console.log(command);
+                            that.webRtcWs.send(JSON.stringify(command));
+                            break;
+
+                        case "answer":
+                            break;
+
+                        case "message":
+                            alert(msg.data);
+                            break;
+
+                        case "geticecandidate":
+                            var candidates = JSON.parse(msg.data);
+                            for (var i = 0; candidates && i < candidates.length; i++) {
+                                var elt = candidates[i];
+                                var candidate = new that.RTCIceCandidate({sdpMLineIndex: elt.sdpMLineIndex, candidate: elt.candidate});
+                                that.webRtcPc.addIceCandidate(candidate,
+                                    function () {
+                                        console.log("IceCandidate added: " + JSON.stringify(candidate));
+                                    },
+                                    function (error) {
+                                        console.log("addIceCandidate error: " + error);
+                                    }
+                                );
+                            }
+                            // document.documentElement.style.cursor ='default';
+                            break;
+                    }
+                };
+
+                that.webRtcWs.onclose = function (evt) {
+                    if (that.webRtcPc) {
+                        that.webRtcPc.close();
+                        that.webRtcPc = null;
+                    }
+                    // document.getElementById("stop").disabled = true;
+                    // document.getElementById("start").disabled = false;
+                    // document.documentElement.style.cursor ='default';
+                };
+
+                that.webRtcWs.onerror = function (evt) {
+                    alert("An error has occurred!");
+                    that.webRtcWs.close();
+                };
+
+            } else {
+                alert("Sorry, this browser does not support WebSockets.");
+            }
+        },
+        webRtcStop: function() {
+            if (this.audio_video_stream) {
+                try {
+                    this.audio_video_stream.stop();
+                } catch (e) {
+                    for (var i = 0; i < this.audio_video_stream.getTracks().length; i++)
+                        this.audio_video_stream.getTracks()[i].stop();
+                }
+                this.audio_video_stream = null;
+            }
+            // CONTINUE HERE...
+            document.getElementById('com-chilipeppr-widget-cam-remote-video').src = '';
+            // document.getElementById('local-video').src = '';
+            if (this.webRtcPc) {
+                this.webRtcPc.close();
+                this.webRtcPc = null;
+            }
+            if (this.webRtcWs) {
+                this.webRtcWs.close();
+                this.webRtcWs = null;
+            }
+            // document.getElementById("stop").disabled = true;
+            // document.getElementById("start").disabled = false;
+            // document.documentElement.style.cursor ='default';
+        },
+        // END WEBRTC CONNECTION METHODS
+        
         /**
          * Subscribe to connect/disconnect events for SPJS so we can pivot off
          * of it for detection.
@@ -357,7 +584,11 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
             
             this.sendSyncActiveId = "cam-install-" + this.sendSyncIdNum;
             this.sendSyncIdNum++;
-            chilipeppr.publish("/com-chilipeppr-widget-serialport/ws/send", "exec id:" + this.sendSyncActiveId + " " + cmd);  
+            var spjsCmd = "exec";
+            spjsCmd += " id:" + this.sendSyncActiveId;
+            if (this.isUseLogin) spjsCmd += " user:" + this.user + " pass:" + this.pass;
+            spjsCmd += " " + cmd;
+            chilipeppr.publish("/com-chilipeppr-widget-serialport/ws/send", spjsCmd);  
             console.log("just did sendSync. sendSyncActiveId:", this.sendSyncActiveId);
         },
         onSendSyncWsRecv: function(msg) {
@@ -419,9 +650,10 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                 
                 if ('ExecStatus' in data) {
                     //this.appendLog(data.Output + "\n");      
-                    if (this.isInRaspiCheckMode) {
+                    /*if (this.isInRaspiCheckMode) {
                         this.checkIfRaspberryPiCallback(data);
-                    } else if (this.isInSendSyncMode) {
+                    } else */
+                    if (this.isInSendSyncMode) {
                         this.onSendSyncWsRecv(msg);
                     }
                 } else if ('ExecRuntimeStatus' in data) {
@@ -435,22 +667,23 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
         checkRaspiUserCallback: null,
         checkIfRaspberryPi: function(callback) {
             this.checkRaspiUserCallback = callback;
-            this.isInRaspiCheckMode = true;
-            this.subscribeToLowLevelSerial();
+            // this.isInRaspiCheckMode = true;
+            // this.subscribeToLowLevelSerial();
             // we potentially have a raspi candidate. send actual cmd line and parse that
-            this.send('cat /etc/os-release');
             var that = this;
-            setTimeout(function() {
-                that.send('echo "done-with-cat-etc-release"');
-            }, 500);
+            this.sendSync('cat /etc/os-release', function(data) {
+                console.log("got done with 1st step of checkIfRaspberryPi. data:", data);
+                this.raspiCapture = data.Output;
+                that.sendSync('echo "done-with-cat-etc-release"', that.checkIfRaspberryPiCallback.bind(that));
+            });
         },
         checkIfRaspberryPiCallback: function(payload) {
             
             // analyze what's coming back
             if (payload.Output.match(/done-with-cat-etc-release/)) {
                 // we are done capturing
-                this.isInRaspiCheckMode = false;
-                this.unsubscribeFromLowLevelSerial();
+                // this.isInRaspiCheckMode = false;
+                // this.unsubscribeFromLowLevelSerial();
                 
                 console.log("done capturing");
                 //this.appendLog('We captured\n<span style="color:red">' + this.raspiCapture + '</span>');
@@ -541,13 +774,16 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
             $('#' + this.id + " .btn-install").click(this.uv4lInstall.bind(this));
             $('#' + this.id + " .btn-login").click(this.onHostLogin.bind(this));
         },
+        isUseLogin: false, // if set to true then use login
         user: null,
         pass: null,
         onHostLogin: function() {
             console.log("onHostLogin");
+            this.isUseLogin = true;
             this.user = $('#' + this.id + " .username").val(); 
             this.pass = $('#' + this.id + " .password").val(); 
             console.log("user:", this.user, "pass:", this.pass);
+            this.initCheckForCam();
         },
         /**
          * Check if uv4l is installed
@@ -649,6 +885,19 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                     });
                 });
             });
+        },
+        checkIfUv4lIsRunning: function(callback) {
+            var results = {isRunning: false};
+            // we can see if uv4l is running from the command
+            // sudo service uv4l_raspicam status
+            this.sendSync("sudo service uv4l_raspicam status", function(data) {
+                console.log("checkIfUv4lIsRunning. data:", data);
+                if (data.Output.match(/Active: active/)) {
+                    // it is running
+                    results.isRunning = true;
+                }
+                if (callback) callback(results);
+            })
         },
         appendToOutput: function(txt) {
             var termEl = $('#' + this.id + ' .terminal');

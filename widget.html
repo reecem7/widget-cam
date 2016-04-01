@@ -96,8 +96,8 @@
                 <p>Or, enter your username/password here for your Raspberry Pi to enable this 
                 widget to authenticate on your behalf and send commands.</p>
                 
-                <input type="text" class="form-control username" placeholder="Username">
-                <input type="password" class="form-control password" placeholder="Password">
+                <input type="text" class="form-control username" placeholder="Username" value="pi">
+                <input type="password" class="form-control password" placeholder="Password" value="raspberry">
                 <button type="button" class="btn btn-default btn-login">
                     Login
                 </button>
@@ -132,11 +132,61 @@
             </div>
             
             <div class="well install-msg isinstalled hidden">
-                You actually have uv4l installed. What are you waiting for? Show your cam.
+                You actually have uv4l installed, but it is not running. What are you waiting for? Show your cam. 
+                (Launch it for them)
+            </div>
+            
+            <div class="well install-msg isrunning hidden">
+                We will show live stream here.
+                
+                <video id="com-chilipeppr-widget-cam-remote-video"></video>
             </div>
 
         </div>
 
+        <div class="modal fade settings-modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h4 class="modal-title">WebRTC Settings</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form class="form-horizontal" role="form">
+                            <p></p>
+    
+                            <label>
+                                <input type="checkbox" xonclick="remote_hw_vcodec_selection();" 
+                                id="remote_hw_vcodec" name="remote_hw_vcodec" 
+                                value="remote_hw_vcodec" 
+                                title="try to force the use of the hardware codec for both encoding and decoding if enabled and supported">
+                                Force use of hardware codec for
+                            </label>
+                            <select id="remote_vformat" name="remote_vformat" 
+                            xonclick="remote_hw_vcodec_format_selection();" 
+                            title="available resolutions and frame rates at the min., max. and start configured bitrates for adaptive streaming which will be scaled from the base 720p 30fps">
+                                <option value="10">320x240 30 fps</option>
+                                <option value="20">352x288 30 fps</option>
+                                <option value="30" selected="selected">640x480 30 fps</option>
+                                <option value="40">960x720 30 fps</option>
+                                <option value="50">1024x768 30 fps</option>
+                                <option value="60">1280x720 30 fps, kbps min.1500 max.4000 start2000</option>
+                                <option value="70">1280x768 30 fps</option>
+                                <option value="80">1280x960 30 fps</option>
+                                <option value="90">1600x768 30 fps</option>
+                                <option value="100">1920x1072 15 fps</option>
+                            </select>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>                
+                </div>
+                <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+        </div>
+        <!-- /.modal -->
 
         <div class="modal fade preferences-window" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-lg">
