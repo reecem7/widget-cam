@@ -85,7 +85,7 @@ cprequire_test(["inline:com-chilipeppr-widget-cam"], function(myWidget) {
     
     
     $('title').html(myWidget.name);
-    myWidget.init();
+    // myWidget.init();
 } /*end_test*/ );
 
 // This is the main definition of your widget. Give it a unique name.
@@ -539,6 +539,15 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
          */
         uv4lSetupInstall: function() {
             $('#' + this.id + " .btn-install").click(this.uv4lInstall.bind(this));
+            $('#' + this.id + " .btn-login").click(this.onHostLogin.bind(this));
+        },
+        user: null,
+        pass: null,
+        onHostLogin: function() {
+            console.log("onHostLogin");
+            this.user = $('#' + this.id + " .username").val(); 
+            this.pass = $('#' + this.id + " .password").val(); 
+            console.log("user:", this.user, "pass:", this.pass);
         },
         /**
          * Check if uv4l is installed
