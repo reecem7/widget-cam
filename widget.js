@@ -253,7 +253,17 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                                                         // let's see if it is running
                                                         that.checkIfUv4lIsRunning(function(results) {
                                                             if (results.isRunning) {
-                                                                $('#' + that.id + " .isrunning").removeClass("hidden");
+                                                                
+                                                                that.webRtcGo(function(payload) {
+                                                                    if (payload.result == "success") {
+                                                                        // cool, good to go
+                                                                        $('#' + that.id + " .isrunning").removeClass("hidden");
+                                                                    } else {
+                                                                        // got error
+                                                                        $('#' + that.id + " .isinstalled").removeClass("hidden");
+                                                                    }
+                                                                });
+                                                                
                                                             } else {
                                                                 // it is not running, let's launch it for them
                                                                 $('#' + that.id + " .isinstalled").removeClass("hidden");
@@ -311,11 +321,41 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
         
         // WEBRTC CONNECTION METHODS
         
+        webRtcCallback: null,
+        /**
+         * Use this as your main entry point. You need to provide a callback which
+         * will be told success or error.
+         */
+        webRtcGo: function(callback) {
+            this.webRtcCallback = callback;
+            this.webRtcInit();
+            this.webRtcStart();
+        },
+        /**
+         * Called after successfully streaming remote video
+         */
+        onWebRtcSuccess: function() {
+            this.webRtcCallback({result:"success"});
+        },
+        /**
+         * Called if failure connecting and streaming.
+         */
+        onWebRtcError: function(errMsg) {
+            this.webRtcCallback({result:"error", msg:errMsg});
+        },
+        
         /**
          * Trigger the initial check of whether WebRTC is running on the server.
          */
-        checkIfWebRtcIsRunningOnServer: function() {
-            this.webRtcSignallingServerAddress = this.ipAddrForSpjs + ':8080';
+        webRtcInit: function() {
+            
+            // chech that we have an spjs ip addr
+            if (this.ipAddrForSpjs && this.ipAddrForSpjs.length > 0)
+                this.webRtcSignallingServerAddress = this.ipAddrForSpjs + ':8080';
+            else {
+                this.onWebRtcError("No IP address for SPJS.");
+                return;
+            }
             this.webRtcWs = null;
             this.webRtcPc;
             this.webRtcAudioVideoStream;
@@ -341,6 +381,8 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
             navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
             this.URL =  window.URL || window.webkitURL;
 
+            // actually start the connection
+            // this.webRtcStart();
         },
         webRtcCeatePeerConnection: function() {
             try {
@@ -354,7 +396,10 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                 console.log("peer connection successfully created!");
             } catch (e) {
                 console.log("createPeerConnection() failed");
+                this.onWebRtcError("createPeerConnection() failed");
+                return false;
             }
+            return true;
         },
         onWebRtcIceCandidate: function(event) {
             if (event.candidate) {
@@ -440,7 +485,7 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                                     }, function (error) {
                                         alert("Failed to createAnswer: " + error);
 
-                                    }, mediaConstraints);
+                                    }, that.mediaConstraints);
                                 },
                                 function onRemoteSdpError(event) {
                                     alert('Failed to set remote description (unsupported codec on this browser?): ' + event);
@@ -494,10 +539,12 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                 that.webRtcWs.onerror = function (evt) {
                     alert("An error has occurred!");
                     that.webRtcWs.close();
+                    that.onWebRtcError("Error with websocket. Likely that UV4l server is not running.");
                 };
 
             } else {
                 alert("Sorry, this browser does not support WebSockets.");
+                this.onWebRtcError("No websocket support. How old is your browser?");
             }
         },
         webRtcStop: function() {
