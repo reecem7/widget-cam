@@ -70,7 +70,7 @@
         <div class="panel-body">
             
             <input class="hidden" required type="text" id="signalling_server" 
-                value="192.168.1.16:8889" 
+                value="192.168.1.68/webcam/?action=stream" 
                 title="<host>:<port>, default address is autodetected"/>
             <input class="hidden" type="text" id="ice_servers" value="" 
                 title="array of RTCIceServer objects as valid JSON string"/>
@@ -200,7 +200,7 @@
                             <p>The Camera widget will get a "motion" MJPEG Stream from your url. Please install motion and input the complete url to the MJPEG Stream.</p>
     
                             <div class="input-group" style="width:200px;">
-                                <input type="string" class="form-control mjpeg-url" placeholder="url for mjpeg stream" value="http://127.0.0.1:9081" />
+                                <input type="string" class="form-control mjpeg-url" placeholder="url for mjpeg stream" value="http://192.168.1.68/webcam/?action=stream" />
                                 <div class="input-group-addon">url</div>
                             </div>
                             </form>
