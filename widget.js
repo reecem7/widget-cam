@@ -900,7 +900,8 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          * We actually do the install here
          */
          
-         // ?? Deleted below
+         /*
+        // ?? Deleted below
         uv4lInstall: function() {
             
             // let's show commands and results in terminal pre div
@@ -974,6 +975,8 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
                 if (callback) callback(results);
             })
         },
+        */
+        
         appendToOutput: function(txt) {
             var termEl = $('#' + this.id + ' .terminal');
             termEl.text(termEl.text() + txt + "\n");
