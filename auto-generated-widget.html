@@ -15,42 +15,42 @@
 
     <style type='text/css'>
 /* CSS for ChiliPeppr Widget */
-#com-chilipeppr-widget-cam {
+#com-chilipeppr-widget-cam-octopi {
    margin:10px;
 }
 
-#com-chilipeppr-widget-cam .nav-tabs>li>a {
+#com-chilipeppr-widget-cam-octopi .nav-tabs>li>a {
     padding: 2px 6px;
 }
 
-#com-chilipeppr-widget-cam .panel-body {
+#com-chilipeppr-widget-cam-octopi .panel-body {
     padding:0;
     /*min-height:200px;*/
 }
     
-#com-chilipeppr-widget-cam .overlayWrapper {
+#com-chilipeppr-widget-cam-octopi .overlayWrapper {
     position:relative;
     margin:0;
     padding:0;
 }
-#com-chilipeppr-widget-cam .cam-line-horiz {
+#com-chilipeppr-widget-cam-octopi .cam-line-horiz {
     border-top: 1px solid red;
     top:50%;
     left:0;
     right:0;
     position:absolute;
 }
-#com-chilipeppr-widget-cam .cam-line-vert {
+#com-chilipeppr-widget-cam-octopi .cam-line-vert {
     border-left: 1px solid red;
     top:0;
     left:50%;
     bottom:0;
     position:absolute;
 }
-#com-chilipeppr-widget-cam .well {
+#com-chilipeppr-widget-cam-octopi .well {
     margin-bottom:0;
 }
-#com-chilipeppr-widget-cam .terminal {
+#com-chilipeppr-widget-cam-octopi .terminal {
     background-color:#000000;
     margin-top:14px;
     color:#cccccc;
@@ -97,7 +97,7 @@ requirejs.config({
     }
 });
 
-cprequire_test(["inline:com-chilipeppr-widget-cam"], function(myWidget) {
+cprequire_test(["inline:com-chilipeppr-widget-cam-octopi"], function(myWidget) {
 
     // Test this element. This code is auto-removed by the chilipeppr.load()
     // when using this widget in production. So use the cpquire_test to do things
@@ -152,12 +152,12 @@ cprequire_test(["inline:com-chilipeppr-widget-cam"], function(myWidget) {
 } /*end_test*/ );
 
 // This is the main definition of your widget. Give it a unique name.
-cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other dependencies here */ ], function() {
+cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* other dependencies here */ ], function() {
     return {
         /**
          * The ID of the widget. You must define this and make it unique.
          */
-        id: "com-chilipeppr-widget-cam", // Make the id the same as the cpdefine id
+        id: "com-chilipeppr-widget-cam-octopi", // Make the id the same as the cpdefine id
         name: "Widget / Cam", // The descriptive name of your widget.
         desc: "This widget loads a webcam view in ChiliPeppr via WebRTC.", // A description of what your widget does
         url: "http://raw.githubusercontent.com/reecem7/widget-cam-octopi/master/auto-generated-widget.html",       // The final URL of the working widget as a single HTML file with CSS and Javascript inlined. You can let runme.js auto fill this if you are using Cloud9.
@@ -1088,8 +1088,8 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
             this.URL =  window.URL || window.webkitURL
 
             // bind button click events
-            $('#com-chilipeppr-widget-cam .btn-startstreaming').click(this.onBtnStartClick.bind(this));
-            $('#com-chilipeppr-widget-cam .btn-stopstreaming').click(this.onBtnStopClick.bind(this));
+            $('#com-chilipeppr-widget-cam-octopi .btn-startstreaming').click(this.onBtnStartClick.bind(this));
+            $('#com-chilipeppr-widget-cam-octopi .btn-stopstreaming').click(this.onBtnStopClick.bind(this));
             this.start();
 
         },
@@ -1186,8 +1186,8 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
             if ("WebSocket" in window) {
                 //document.getElementById("stop").disabled = false;
                 //document.getElementById("start").disabled = true;
-                $('#com-chilipeppr-widget-cam .btn-stopstreaming').prop('disabled', false);
-                $('#com-chilipeppr-widget-cam .btn-startstreaming').prop('disabled', true);
+                $('#com-chilipeppr-widget-cam-octopi .btn-stopstreaming').prop('disabled', false);
+                $('#com-chilipeppr-widget-cam-octopi .btn-startstreaming').prop('disabled', true);
                 document.documentElement.style.cursor ='wait';
                 //this.server = document.getElementById("signalling_server").value.toLowerCase();
                 this.server = $('#' + this.id + ' #signalling_server').val().toLowerCase();
@@ -1324,8 +1324,8 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                     }
                     //document.getElementById("stop").disabled = true;
                     //document.getElementById("start").disabled = false;
-                    $('#com-chilipeppr-widget-cam .btn-stopstreaming').prop('disabled', true);
-                    $('#com-chilipeppr-widget-cam .btn-startstreaming').prop('disabled', false);
+                    $('#com-chilipeppr-widget-cam-octopi .btn-stopstreaming').prop('disabled', true);
+                    $('#com-chilipeppr-widget-cam-octopi .btn-startstreaming').prop('disabled', false);
 
                     document.documentElement.style.cursor ='default';
                 };
@@ -1609,7 +1609,7 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
 </head>
 
 <body>
-    <div id="com-chilipeppr-widget-cam" class="panel panel-default">
+    <div id="com-chilipeppr-widget-cam-octopi" class="panel panel-default">
         <div class="panel-heading ">
 
             <div class="btn-toolbar pull-right" role="toolbar">
@@ -1694,7 +1694,7 @@ cpdefine("inline:com-chilipeppr-widget-cam", ["chilipeppr_ready", /* other depen
                 the uv4l WebRTC server, but we don't have that install script 
                 setup yet. If you are interested in forking this widget and 
                 mimicking the Raspberry Pi setup please feel free and then push 
-                the changes to Github http://github.com/chilipeppr/widget-cam 
+                the changes to Github http://github.com/chilipeppr/widget-cam-octopi 
                 repository.
             </div>
 
