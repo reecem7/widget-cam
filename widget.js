@@ -213,7 +213,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
             
             var that = this;
             
-            
+            /**
             // else just try to see if spjs host is raspi, and has cam
             this.checkIfSpjsConnected(function(results) {
                 if (results.connected) {
@@ -318,7 +318,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
                     that.isRunningInitCheckForCam = false;
                 }
             });
-            
+            */
         },
         
         // WEBRTC CONNECTION METHODS
@@ -581,7 +581,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          * of it for detection.
          */
        
-        //?? - Deleted Below
+        /*?? - Deleted Below
         setupPubSubForSpjsConnect: function() {
            chilipeppr.subscribe('/com-chilipeppr-widget-serialport/ws/onconnect', this, this.onSpjsConnect); 
            chilipeppr.subscribe('/com-chilipeppr-widget-serialport/ws/ondisconnect', this, this.onSpjsDisconnect); 
@@ -609,7 +609,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          */
          
          
-        // ?? Deleted below
+        /* ?? Deleted below
         sendExecRuntime: function() {
             chilipeppr.publish("/com-chilipeppr-widget-serialport/ws/send", "execruntime");  
         },
@@ -619,7 +619,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          * Send a terminal command to the currently running SPJS.
          */
          
-        // ?? Deleted below
+        /* ?? Deleted below
         send: function(cmd) {
             chilipeppr.publish("/com-chilipeppr-widget-serialport/ws/send", "exec " + cmd);  
         },
