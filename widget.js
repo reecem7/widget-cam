@@ -213,7 +213,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
             
             var that = this;
             
-            /**
+            
             // else just try to see if spjs host is raspi, and has cam
             this.checkIfSpjsConnected(function(results) {
                 if (results.connected) {
@@ -318,7 +318,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
                     that.isRunningInitCheckForCam = false;
                 }
             });
-            */
+            
         },
         
         // WEBRTC CONNECTION METHODS
@@ -384,7 +384,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
             this.URL =  window.URL || window.webkitURL;
 
             // actually start the connection
-            // this.webRtcStart();
+             this.webRtcStart();
         },
         webRtcCeatePeerConnection: function() {
             try {
@@ -581,7 +581,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          * of it for detection.
          */
        
-        /*?? - Deleted Below
+        
         setupPubSubForSpjsConnect: function() {
            chilipeppr.subscribe('/com-chilipeppr-widget-serialport/ws/onconnect', this, this.onSpjsConnect); 
            chilipeppr.subscribe('/com-chilipeppr-widget-serialport/ws/ondisconnect', this, this.onSpjsDisconnect); 
@@ -601,7 +601,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
         onSpjsDisconnect: function() {
             this.initCheckForCam();
         },
-         // ?? Deleted above
+       
         
         /**
          * Send the execruntime command to the currently running SPJS to see what
@@ -609,7 +609,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          */
          
          
-        /* ?? Deleted below
+        
         sendExecRuntime: function() {
             chilipeppr.publish("/com-chilipeppr-widget-serialport/ws/send", "execruntime");  
         },
@@ -619,7 +619,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          * Send a terminal command to the currently running SPJS.
          */
          
-        /* ?? Deleted below
+       
         send: function(cmd) {
             chilipeppr.publish("/com-chilipeppr-widget-serialport/ws/send", "exec " + cmd);  
         },
@@ -630,7 +630,6 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          * Send synchronously with callback as if you were right at the command line
          */
          
-         /*?? Deleted below
         sendSync: function(cmd, callback) {
             
             if (this.isInSendSyncMode) {
@@ -716,7 +715,6 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
                         this.checkIfRaspberryPiCallback(data);
                     } else */
                     
-                     /*?? Deleted below
                     if (this.isInSendSyncMode) {
                         this.onSendSyncWsRecv(msg);
                     }
@@ -799,7 +797,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
             if (this.checkLinuxCallback) this.checkLinuxCallback(json);
             this.checkLinuxCallback = null;
             
-            /*
+            
             if (json.OS.match(/linux/i) && json.Arch.match(/arm/i)) {
                 this.execruntime = json;
                 //this.checkIfRaspberryPi();
@@ -808,7 +806,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
             
         },
         
-        /* ?? Deleted below
+        
         
         isSpjsStatusInitted: false,
         statusCallback: null,
@@ -838,7 +836,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          * Attach all events to the install div to enable everything to work.
          */
          
-         /* ?? Deleted below
+         
         uv4lSetupInstall: function() {
             $('#' + this.id + " .btn-install").click(this.uv4lInstall.bind(this));
             $('#' + this.id + " .btn-login").click(this.onHostLogin.bind(this));
