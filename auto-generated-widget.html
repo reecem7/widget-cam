@@ -16,18 +16,26 @@
     <style type='text/css'>
 /* CSS for ChiliPeppr Widget */
 #com-chilipeppr-widget-cam-octopi {
-   /*margin:10px;*/
+   margin:0px;
+   padding-bottom:0px;
 }
 
+
 #com-chilipeppr-widget-cam-octopi .nav-tabs>li>a {
-    padding: 2px 6px;
+    padding: 0px 0px;
 }
 
 #com-chilipeppr-widget-cam-octopi .panel-body {
     padding:0;
     /*min-height:200px;*/
 }
-    
+
+#com-chilipeppr-widget-cam-octopi .panel-heading {
+    padding:2px;
+    /*min-height:200px;*/
+}
+
+      
 #com-chilipeppr-widget-cam-octopi .overlayWrapper {
     position:relative;
     margin:0;
@@ -52,7 +60,7 @@
 }
 #com-chilipeppr-widget-cam-octopi .terminal {
     background-color:#000000;
-    margin-top:40px;
+    margin-top:5px;
     color:#cccccc;
     overflow:auto;
     max-height:150px;
@@ -1642,7 +1650,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
 
 <body>
     <div id="com-chilipeppr-widget-cam-octopi" class="panel panel-default">
-        <div class="panel-heading ">
+        <div class="panel-heading">
 
             <div class="btn-toolbar pull-right" role="toolbar">
                 <div class="btn-group">
@@ -1696,8 +1704,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
             </div>
             
             <div class="well install-msg notconnected hidden">
-                You are not connected to a Serial Port JSON Server. Please connect 
-                and then retry.
+                You are not connected to a Serial Port JSON Server.-
             </div>
             
             <div class="well install-msg allowexec xhidden">
@@ -1811,7 +1818,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                        <h4 class="modal-title">Camera  Options</h4>
+                        <h4 class="modal-title">Camera Options</h4>
                     </div>
                     <div class="modal-body">
                         <form class="form-horizontal" role="form">

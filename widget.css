@@ -1,17 +1,25 @@
 /* CSS for ChiliPeppr Widget */
 #com-chilipeppr-widget-cam-octopi {
-   /*margin:10px;*/
+   margin:0px;
+   padding-bottom:0px;
 }
 
+
 #com-chilipeppr-widget-cam-octopi .nav-tabs>li>a {
-    padding: 2px 6px;
+    padding: 0px 0px;
 }
 
 #com-chilipeppr-widget-cam-octopi .panel-body {
     padding:0;
     /*min-height:200px;*/
 }
-    
+
+#com-chilipeppr-widget-cam-octopi .panel-heading {
+    padding:2px;
+    /*min-height:200px;*/
+}
+
+      
 #com-chilipeppr-widget-cam-octopi .overlayWrapper {
     position:relative;
     margin:0;
@@ -36,7 +44,7 @@
 }
 #com-chilipeppr-widget-cam-octopi .terminal {
     background-color:#000000;
-    margin-top:40px;
+    margin-top:5px;
     color:#cccccc;
     overflow:auto;
     max-height:150px;
