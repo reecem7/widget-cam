@@ -630,7 +630,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          * Send synchronously with callback as if you were right at the command line
          */
          
-         //?? Deleted below
+         /*?? Deleted below
         sendSync: function(cmd, callback) {
             
             if (this.isInSendSyncMode) {
@@ -716,7 +716,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
                         this.checkIfRaspberryPiCallback(data);
                     } else */
                     
-                     //?? Deleted below
+                     /*?? Deleted below
                     if (this.isInSendSyncMode) {
                         this.onSendSyncWsRecv(msg);
                     }
@@ -805,10 +805,10 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
                 //this.checkIfRaspberryPi();
                 //setTimeout(this.askForPwd.bind(this), 1000);
             }
-            */
+            
         },
         
-        // ?? Deleted below
+        /* ?? Deleted below
         
         isSpjsStatusInitted: false,
         statusCallback: null,
@@ -838,7 +838,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          * Attach all events to the install div to enable everything to work.
          */
          
-         // ?? Deleted below
+         /* ?? Deleted below
         uv4lSetupInstall: function() {
             $('#' + this.id + " .btn-install").click(this.uv4lInstall.bind(this));
             $('#' + this.id + " .btn-login").click(this.onHostLogin.bind(this));
@@ -858,7 +858,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          * Check if uv4l is installed
          */
          
-         // ?? Deleted below
+         /* ?? Deleted below
         uv4lCheckIfInstalled: function(callback) {
             // if you have verified if this is linux/raspi this will check
             // if installed
@@ -879,7 +879,7 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
          * Check if -allowexec is in play
          */
          
-         // ?? Deleted below
+         /* ?? Deleted below
         checkIfAllowExec: function(callback) {
             console.log("checking if allowexec is in play")
             // we see if we can exec a command. just send any command.
@@ -977,14 +977,14 @@ cpdefine("inline:com-chilipeppr-widget-cam-octopi", ["chilipeppr_ready", /* othe
         },
         */
         
-        appendToOutput: function(txt) {
+      /*  appendToOutput: function(txt) {
             var termEl = $('#' + this.id + ' .terminal');
             termEl.text(termEl.text() + txt + "\n");
             
             termEl.scrollTop(termEl[0].scrollHeight - termEl.height());
         },
         
-         // ?? Deleted Above
+         */ // Deleted Above
         
         // ---------------
         // End Cam check/install region
